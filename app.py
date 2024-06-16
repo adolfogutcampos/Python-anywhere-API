@@ -1,21 +1,23 @@
-from flask import Flask, request, jsonify
+import os
 import pandas as pd
 import pickle
 import sqlite3
+from flask import Flask, request, jsonify
 from sklearn.linear_model import LinearRegression
-
-os.chdir(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
 # Cargar el modelo
-with open('advertising_model', 'rb') as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'Data')
+MODEL_PATH = os.path.join(DATA_DIR, 'advertising_model')
+DATABASE = os.path.join(DATA_DIR, 'advertising.db')
+
+with open(MODEL_PATH, 'rb') as f:
     model = pickle.load(f)
 
-# Configurar la base de datos
-DATABASE = 'advertising.db'
-
+# Conectar a la base de datos
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
@@ -64,9 +66,10 @@ def retrain():
     model.fit(X, y)
 
     # Guardar el nuevo modelo
-    with open('advertising_model', 'wb') as f:
+    with open(MODEL_PATH, 'wb') as f:
         pickle.dump(model, f)
     
     return "Model retrained", 200
 
-# app.run()
+if __name__ == '__main__':
+    app.run()
