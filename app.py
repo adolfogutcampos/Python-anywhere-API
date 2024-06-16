@@ -1,11 +1,4 @@
 from flask import Flask, request, jsonify
-import os
-import pickle
-from sklearn.model_selection import cross_val_score
-import pandas as pd
-
-
-from flask import Flask, request, jsonify
 import pandas as pd
 import pickle
 import sqlite3
