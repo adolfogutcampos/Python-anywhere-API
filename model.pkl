@@ -1,0 +1,21 @@
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+import pickle
+
+# Simula el dataframe de entrenamiento
+data = {
+    'tv': [230.1, 44.5, 17.2],
+    'radio': [37.8, 39.3, 45.9],
+    'newspaper': [69.2, 45.1, 69.3],
+    'sales': [22.1, 10.4, 9.3]
+}
+df = pd.DataFrame(data)
+
+X = df[['tv', 'radio', 'newspaper']]
+y = df['sales']
+
+model = LinearRegression()
+model.fit(X, y)
+
+with open('model.pkl', 'wb') as f:
+    pickle.dump(model, f)
