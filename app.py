@@ -4,7 +4,10 @@ import pickle
 import sqlite3
 from sklearn.linear_model import LinearRegression
 
+os.chdir(os.path.dirname(__file__))
+
 app = Flask(__name__)
+app.config['DEBUG'] = True
 
 # Cargar el modelo
 with open('advertising_model', 'rb') as f:
@@ -66,5 +69,4 @@ def retrain():
     
     return "Model retrained", 200
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# app.run()
