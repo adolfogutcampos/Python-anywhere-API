@@ -12,7 +12,7 @@ app.config['DEBUG'] = True
 
 # Cargar el modelo
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'Data')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 MODEL_PATH = os.path.join(DATA_DIR, 'advertising_model')
 DATABASE = os.path.join(DATA_DIR, 'advertising.db')
 
@@ -73,5 +73,5 @@ def retrain():
     
     return "Model retrained", 200
 
-if __name__ == '__main__':
-    app.run()
+#if __name__ == '__main__':
+ #   app.run()
