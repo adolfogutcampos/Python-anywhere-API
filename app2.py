@@ -25,53 +25,77 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Endpoint para predecir
+# 1- Endpoint para predecir
+
 @app.route('/v2/predict', methods=['GET'])
 def predict():
     tv = request.args.get('tv', type=float)
     radio = request.args.get('radio', type=float)
     newspaper = request.args.get('newspaper', type=float)
-    
+
     if tv is None or radio is None or newspaper is None:
         return "Missing parameters", 400
-    
+
     prediction = model.predict([[tv, radio, newspaper]])
     return jsonify({'prediction': prediction[0]})
 
-# Endpoint para ingestar datos
+# 2- Endpoint para ingestar datos
+
 @app.route('/v2/ingest_data', methods=['POST'])
 def ingest_data():
-    data = request.get_json()
-    if not data:
-        return "Invalid data", 400
+    tv = request.args.get('tv', type=float)
+    radio = request.args.get('radio', type=float)
+    newspaper = request.args.get('newspaper', type=float)
+    sales = request.args.get('sales', type=float)
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO advertising (tv, radio, newspaper, sales) VALUES (?, ?, ?, ?)',
-                   (data['tv'], data['radio'], data['newspaper'], data['sales']))
+
+    query = '''INSERT INTO campañas VALUES(?, ?, ?, ?)'''
+    query_2 = '''SELECT * FROM campañas'''
+
+    cursor.execute(query, (tv, radio, newspaper, sales))
+    result = cursor.execute(query_2).fetchall()
+
     conn.commit()
     conn.close()
     return "Data ingested", 201
 
-# Endpoint para reentrenar el modelo
+# 3- Endpoint para reentrenar el modelo
+
 @app.route('/v2/retrain', methods=['PUT'])
 def retrain():
-    conn = get_db_connection()
-    df = pd.read_sql_query('SELECT * FROM advertising', conn)
-    conn.close()
 
-    X = df[['tv', 'radio', 'newspaper']]
-    y = df['sales']
+    connection = sqlite3.connect('data/advertising.db')
+    cursor = connection .cursor()
 
-    global model
-    model = LinearRegression()
-    model.fit(X, y)
+    query = '''SELECT * FROM campañas'''
+    data = cursor.execute(query).fetchall()
 
-    # Guardar el nuevo modelo
-    with open(MODEL_PATH, 'wb') as f:
-        pickle.dump(model, f)
-    
-    return "Model retrained", 200
+    df = pd.DataFrame(data, columns= ['TV', 'radio', 'newspaper', 'sales'])
+    df.dropna(inplace= True)
+
+    X = df.drop(columns= 'sales')
+    Y = df['sales']
+
+    with open(MODEL_PATH, 'rb') as f:
+        current_model = pickle.load(f)
+
+    current_predictions = current_model.predict(X)
+    current_mae = ((current_predictions - Y) ** 2).mean()
+
+    new_model = LinearRegression()
+    new_model.fit(X, Y)
+
+    new_predictions = new_model.predict(X)
+    new_mae = ((new_predictions - Y) ** 2).mean()
+
+    if current_mae > new_mae:
+        with open(MODEL_PATH, 'wb') as f:
+            pickle.dump(new_model, f)
+        return jsonify({'message': 'Model updated', 'old_mae': current_mae, 'new_mae': new_mae})
+    else:
+        return jsonify({'message': 'Keep old model', 'old_mae': current_mae, 'new_mae': new_mae})
 
 #if __name__ == '__main__':
  #   app.run()
